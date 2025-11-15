@@ -120,7 +120,7 @@ class NewsService {
 
       const transformedArticles = articlesWithImages
         .map((article: any) => this.transformArticle(article, validCategory))
-        .filter(article => article.title !== '[Removed]') // Filter out removed articles
+        .filter((article: any) => article.title !== '[Removed]') // Filter out removed articles
         .sort((a: NewsArticle, b: NewsArticle) =>
           new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
         );
