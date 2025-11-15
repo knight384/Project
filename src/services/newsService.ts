@@ -195,7 +195,7 @@ class NewsService {
 
       const transformedArticles = articlesWithImages
         .map((article: any) => this.transformArticle(article, validCategory || 'general'))
-        .filter(article => article.title !== '[Removed]')
+        .filter((article: any) => article.title !== '[Removed]')
         .map(article => ({
           ...article,
           // Highlight search terms in title/description (basic implementation)
