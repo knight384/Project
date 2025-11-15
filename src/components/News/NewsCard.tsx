@@ -35,6 +35,20 @@ export default function NewsCard({ article, onImageError }: NewsCardProps) {
     return text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
   };
 
+  // Sanitize href attributes
+  const sanitizeUrl = (url: string) => {
+    try {
+      const parsed = new URL(url);
+      // Only allow http and https protocols
+      if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+        return '#';
+      }
+      return url;
+    } catch {
+      return '#';
+    }
+  };
+
   return (
     <article className="bg-white dark:bg-gray-800 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-all duration-200 group">
       {/* Article image */}
