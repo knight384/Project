@@ -107,7 +107,7 @@ class WeatherService {
         throw error;
       }
 
-      if (error instanceof Error && error.message.includes('ENOTFOUND') || error.message.includes('ETIMEDOUT')) {
+      if ((error instanceof Error && error.message.includes('ENOTFOUND')) || error.message.includes('ETIMEDOUT')) {
         throw new WeatherError('Weather service temporarily unavailable', 503);
       }
 
