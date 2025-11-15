@@ -1,64 +1,237 @@
-import Image from "next/image";
+'use client';
+
+import { useState, useEffect, useCallback } from 'react';
+import useSWR from 'swr';
+import WeatherCard from '@/components/Weather/WeatherCard';
+import WeatherForecast from '@/components/Weather/WeatherForecast';
+import NewsFeed from '@/components/News/NewsFeed';
+import CitySelector from '@/components/Location/CitySelector';
+import LocationDetector from '@/components/Location/LocationDetector';
+import { locationService } from '@/services/locationService';
+import { WeatherData, NewsArticle, UserPreferences } from '@/types';
+
+// Simple fetcher for SWR
+const fetcher = async (url: string) => {
+  const response = await fetch(url);
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ error: 'Failed to fetch' }));
+    throw new Error(error.error || 'Failed to fetch data');
+  }
+  return response.json();
+};
 
 export default function Home() {
+  const [userPreferences, setUserPreferences] = useState<UserPreferences | null>(null);
+  const [currentLocation, setCurrentLocation] = useState({
+    city: '',
+    lat: 40.7128,
+    lon: -74.0060
+  });
+  const [selectedNewsCategory, setSelectedNewsCategory] = useState('general');
+
+  // Load user preferences on mount
+  useEffect(() => {
+    try {
+      const prefs = locationService.getUserPreferences();
+      setUserPreferences(prefs);
+      setCurrentLocation({
+        city: prefs.location.city,
+        lat: prefs.location.lat,
+        lon: prefs.location.lon
+      });
+      setSelectedNewsCategory(prefs.news.preferredCategory);
+    } catch (error) {
+      console.warn('Failed to load user preferences:', error);
+      // Use default preferences
+      setCurrentLocation({
+        city: 'New York',
+        lat: 40.7128,
+        lon: -74.0060
+      });
+    }
+  }, []);
+
+  // Fetch weather data
+  const { data: weatherData, error: weatherError, isLoading: weatherLoading } = useSWR(
+    currentLocation.lat && currentLocation.lon
+      ? `/api/weather?lat=${currentLocation.lat}&lon=${currentLocation.lon}&units=metric`
+      : null,
+    fetcher,
+    {
+      refreshInterval: 30 * 60 * 1000, // 30 minutes
+      revalidateOnFocus: false,
+      revalidateOnReconnect: true,
+    }
+  );
+
+  // Fetch news data
+  const { data: newsData, error: newsError, isLoading: newsLoading } = useSWR(
+    `/api/news?category=${selectedNewsCategory}&country=us&pageSize=20`,
+    fetcher,
+    {
+      refreshInterval: 30 * 60 * 1000, // 30 minutes
+      revalidateOnFocus: false,
+      revalidateOnReconnect: true,
+    }
+  );
+
+  // Handle location change
+  const handleLocationChange = useCallback((city: string, lat: number, lon: number) => {
+    setCurrentLocation({ city, lat, lon });
+
+    // Update preferences
+    try {
+      const prefs = locationService.getUserPreferences();
+      locationService.setUserPreferences({
+        ...prefs,
+        location: {
+          city,
+          lat,
+          lon,
+          method: 'manual',
+          lastUpdated: new Date().toISOString(),
+        }
+      });
+    } catch (error) {
+      console.warn('Failed to save location preference:', error);
+    }
+  }, []);
+
+  // Handle location detected automatically
+  const handleLocationDetected = useCallback((city: string, lat: number, lon: number) => {
+    setCurrentLocation({ city, lat, lon });
+
+    // Update preferences
+    try {
+      const prefs = locationService.getUserPreferences();
+      locationService.setUserPreferences({
+        ...prefs,
+        location: {
+          city,
+          lat,
+          lon,
+          method: 'auto',
+          lastUpdated: new Date().toISOString(),
+        }
+      });
+    } catch (error) {
+      console.warn('Failed to save auto-detected location:', error);
+    }
+  }, []);
+
+  // Handle news category change
+  const handleNewsCategoryChange = useCallback((category: string) => {
+    setSelectedNewsCategory(category);
+
+    // Update preferences
+    try {
+      const prefs = locationService.getUserPreferences();
+      locationService.setUserPreferences({
+        ...prefs,
+        news: {
+          ...prefs.news,
+          preferredCategory: category,
+          lastCategories: [...new Set([category, ...prefs.news.lastCategories.slice(0, 4)])]
+        }
+      });
+    } catch (error) {
+      console.warn('Failed to save news preference:', error);
+    }
+  }, []);
+
+  // Manual refresh functions
+  const handleWeatherRefresh = () => {
+    // SWR will handle the refresh when we mutate
+    const weatherUrl = `/api/weather?lat=${currentLocation.lat}&lon=${currentLocation.lon}&units=metric`;
+    // Trigger revalidation
+    window.location.reload();
+  };
+
+  const handleNewsRefresh = () => {
+    // SWR will handle the refresh when we mutate
+    const newsUrl = `/api/news?category=${selectedNewsCategory}&country=us&pageSize=20`;
+    // Trigger revalidation
+    window.location.reload();
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="min-h-screen bg-background">
+      {/* Header with location selector */}
+      <header className="sticky top-0 z-40 bg-background/95 backdrop-blur border-b border-border">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                Weather & News Hub
+              </h1>
+            </div>
+            <div className="flex items-center gap-3">
+              <LocationDetector
+                onLocationDetected={handleLocationDetected}
+              />
+              <CitySelector
+                currentCity={currentLocation.city}
+                onCityChange={handleLocationChange}
+                loading={weatherLoading}
+              />
+            </div>
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+      </header>
+
+      {/* Main content */}
+      <main className="container mx-auto px-4 py-6 space-y-8">
+        {/* Weather section */}
+        <section className="space-y-6">
+          <div className="flex justify-center">
+            <WeatherCard
+              weather={weatherData?.data}
+              loading={weatherLoading}
+              error={weatherError?.message}
+              onRefresh={handleWeatherRefresh}
+              lastUpdated={weatherData?.lastUpdated ? new Date(weatherData.lastUpdated) : undefined}
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+          </div>
+
+          {weatherData?.data?.forecast && (
+            <div className="flex justify-center">
+              <WeatherForecast
+                forecast={weatherData.data.forecast}
+                loading={weatherLoading}
+                error={weatherError?.message}
+              />
+            </div>
+          )}
+        </section>
+
+        {/* News section */}
+        <section>
+          <NewsFeed
+            articles={newsData?.articles}
+            loading={newsLoading}
+            error={newsError?.message}
+            category={selectedNewsCategory}
+            onCategoryChange={handleNewsCategoryChange}
+            onRefresh={handleNewsRefresh}
+          />
+        </section>
+
+        {/* Footer with info */}
+        <footer className="mt-16 pt-8 border-t border-border text-center text-sm text-muted-foreground">
+          <div className="space-y-2">
+            <p>
+              Live weather updates and trending news for {currentLocation.city}
+            </p>
+            <p>
+              Data refreshes automatically every 30 minutes
+            </p>
+            <div className="flex justify-center items-center gap-4 text-xs">
+              <span>Powered by OpenWeatherMap</span>
+              <span>•</span>
+              <span>News from NewsAPI.org</span>
+            </div>
+          </div>
+        </footer>
       </main>
     </div>
   );
