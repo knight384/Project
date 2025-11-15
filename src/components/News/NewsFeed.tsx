@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { RefreshCw, Filter, TrendingUp } from 'lucide-react';
-import { NewsFeedProps, NEWS_CATEGORIES } from '@/types';
+import { NewsFeedProps } from '@/types';
+import { NEWS_CATEGORIES } from '@/types/news';
 import { clsx } from 'clsx';
 import NewsCard from './NewsCard';
 
