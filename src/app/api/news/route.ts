@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { newsService, NEWS_CATEGORIES } from '@/services/newsService';
+import { newsService } from '@/services/newsService';
+import { NEWS_CATEGORIES } from '@/types/news';
 
 // Simple in-memory rate limiting
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
