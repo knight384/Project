@@ -157,15 +157,18 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header with location selector */}
-      <header className="sticky top-0 z-40 bg-background/95 backdrop-blur border-b border-border">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+      <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-sm border-b border-border shadow-sm">
+        <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4">
+          <div className="flex flex-col lg:flex-row items-center justify-between gap-3 sm:gap-4">
+            {/* App title */}
             <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              <h1 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                 Weather & News Hub
               </h1>
             </div>
-            <div className="flex items-center gap-3">
+
+            {/* Location controls */}
+            <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
               <LocationDetector
                 onLocationDetected={handleLocationDetected}
               />
@@ -179,53 +182,56 @@ export default function Home() {
         </div>
       </header>
 
-      {/* Main content */}
-      <main className="container mx-auto px-4 py-6 space-y-8">
-        {/* Weather section */}
-        <section className="space-y-6">
-          <div className="flex justify-center">
-            <WeatherCard
-              weather={weatherData?.data}
-              loading={weatherLoading}
-              error={weatherError?.message}
-              onRefresh={handleWeatherRefresh}
-              lastUpdated={weatherData?.lastUpdated ? new Date(weatherData.lastUpdated) : undefined}
-            />
-          </div>
+      {/* Main content - improved layout for mobile/desktop balance */}
+      <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 lg:py-8">
+        <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 lg:gap-8">
 
-          {weatherData?.data?.forecast && (
-            <div className="flex justify-center">
-              <WeatherForecast
-                forecast={weatherData.data.forecast}
+          {/* Weather section - takes full width on mobile/tablet, 5 columns on desktop */}
+          <section className="xl:col-span-5 space-y-4 sm:space-y-6">
+            <div className="flex justify-center lg:justify-start">
+              <WeatherCard
+                weather={weatherData?.data}
                 loading={weatherLoading}
                 error={weatherError?.message}
+                onRefresh={handleWeatherRefresh}
+                lastUpdated={weatherData?.lastUpdated ? new Date(weatherData.lastUpdated) : undefined}
               />
             </div>
-          )}
-        </section>
 
-        {/* News section */}
-        <section>
-          <NewsFeed
-            articles={newsData?.articles}
-            loading={newsLoading}
-            error={newsError?.message}
-            category={selectedNewsCategory}
-            onCategoryChange={handleNewsCategoryChange}
-            onRefresh={handleNewsRefresh}
-          />
-        </section>
+            {weatherData?.data?.forecast && (
+              <div className="flex justify-center lg:justify-start mt-6">
+                <WeatherForecast
+                  forecast={weatherData.data.forecast}
+                  loading={weatherLoading}
+                  error={weatherError?.message}
+                />
+              </div>
+            )}
+          </section>
+
+          {/* News section - takes full width on mobile/tablet, 7 columns on desktop */}
+          <section className="xl:col-span-7">
+            <NewsFeed
+              articles={newsData?.articles}
+              loading={newsLoading}
+              error={newsError?.message}
+              category={selectedNewsCategory}
+              onCategoryChange={handleNewsCategoryChange}
+              onRefresh={handleNewsRefresh}
+            />
+          </section>
+        </div>
 
         {/* Footer with info */}
-        <footer className="mt-16 pt-8 border-t border-border text-center text-sm text-muted-foreground">
+        <footer className="mt-8 sm:mt-12 lg:mt-16 pt-6 sm:pt-8 border-t border-border text-center text-sm text-muted-foreground">
           <div className="space-y-2">
-            <p>
+            <p className="text-base sm:text-sm">
               Live weather updates and trending news for {currentLocation.city}
             </p>
-            <p>
+            <p className="text-xs sm:text-sm">
               Data refreshes automatically every 30 minutes
             </p>
-            <div className="flex justify-center items-center gap-4 text-xs">
+            <div className="flex justify-center items-center gap-4 text-xs opacity-75">
               <span>Powered by OpenWeatherMap</span>
               <span>•</span>
               <span>News from NewsAPI.org</span>
