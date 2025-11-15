@@ -216,7 +216,7 @@ class NewsService {
   }
 
   async getCategories(): Promise<string[]> {
-    return NEWS_CATEGORIES;
+    return [...NEWS_CATEGORIES];
   }
 
   private highlightSearchTerms(text: string, query: string): string {
